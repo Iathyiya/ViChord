@@ -17,13 +17,15 @@ plugins {
 import io.gitlab.arturbosch.detekt.Detekt
 import org.gradle.api.tasks.Delete
 
-val clean by tasks.registering(Delete::class) {
-    delete(rootProject.layout.buildDirectory.asFile)
-    dependsOn(cleanRust)
-}
-
+// Сначала регистрируем кастомную задачу, чтобы она была доступна ниже
 val cleanRust by tasks.registering(Delete::class) {
     delete(file("rust/target"))
+}
+
+// Исправление: используем 'named' вместо 'registering', так как задача clean уже существует
+tasks.named<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
+    dependsOn(cleanRust)
 }
 
 subprojects {
@@ -40,7 +42,8 @@ subprojects {
         allRules = false
         config.setFrom(file("$rootDir/detekt.yml"))
 
-        jvmTarget = libs.versions.jvm.get()
+        // Проверка на null для безопасности, если версия не определена
+        jvmTarget = libs.versions.jvm.orNull ?: "17"
 
         parallel = true
 
